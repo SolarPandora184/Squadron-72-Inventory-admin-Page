@@ -2,128 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Squadron 72 Inventory Admin</title>
+  <title>Inventory Management</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: sans-serif;
       background: #111;
       color: #eee;
-      margin: 0;
+      padding: 2rem;
+    }
+    form, table {
+      background: #222;
       padding: 1rem;
+      border-radius: 10px;
+      max-width: 1000px;
+      margin: 2rem auto;
+    }
+    input, select, button {
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      font-size: 1rem;
     }
     h1, h2 {
       text-align: center;
     }
-    input, button, select {
-      margin: 0.5rem;
+    .logo {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .logo img {
+      max-width: 200px;
+      height: auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
     }
     th, td {
       border: 1px solid #444;
       padding: 0.5rem;
       text-align: left;
-      word-break: break-word;
     }
-    th {
-      background-color: #222;
-    }
-    .missing { background-color: #661111; }
-    .confirmed { background-color: #114411; }
-    .verified { background-color: #113366; }
-    .returned { background-color: #225555; }
-    #adminForm {
-      background: #222;
-      padding: 1rem;
-      margin: 1rem 0;
-      border-radius: 8px;
-    }
-    .table-container {
-      overflow-x: auto;
-      max-width: 100%;
-    }
-    @media (max-width: 768px) {
-      #adminForm { display: none; }
-      .table-container table { min-width: 900px; }
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>Squadron 72 Inventory Admin</h1>
-  <h2>Pending Requests</h2>
-  <div class="table-container">
-    <table id="requestsTable">
-      <thead>
-        <tr>
-          <th>Item Name</th>
-          <th>Requested</th>
-          <th>Custodian</th>
-          <th>Location</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Item Type</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div class="logo">
+    <img src="ChatGPT Image Jul 17, 2025, 10_20_07 AM.png" alt="AESA Logo" />
   </div>
-
-  <div>
-    <button onclick="filterStatus('missing')">Show Missing</button>
-    <button onclick="filterStatus('confirmed')">Show Complete</button>
-    <button onclick="filterStatus('verified')">Show Verified</button>
-    <button onclick="resetInventory()">⚠️ Reset All Inventory</button>
-  </div>
-
-  <div id="adminForm">
-    <h2>Add Item Manually</h2>
+  <h1>Request Inventory Item</h1>
+  <form onsubmit="submitRequest(event)">
     <input type="text" id="itemName" placeholder="Item Name" required />
     <input type="number" id="requested" placeholder="Requested Qty" required />
-    <input type="number" id="onHand" placeholder="On Hand Qty" />
-    <input type="text" id="custodian" placeholder="Custodian (Who Needs It)" />
+    <input type="text" id="custodian" placeholder="Your Name" />
     <input type="text" id="location" placeholder="Location" />
     <input type="email" id="email" placeholder="Email" />
     <input type="text" id="phone" placeholder="Phone" />
-    <select id="itemType">
-      <option value="uniform">Uniform</option>
-      <option value="insignia">Insignia</option>
-      <option value="equipment">Equipment</option>
+    <select id="expendable">
+      <option value="false">Insignia</option>
+      <option value="true">Uniform</option>
+      <option value="true">Equipment</option>
     </select>
-    <button onclick="addManualItem()">Add Item</button>
+    <button type="submit">Submit Request</button>
+  </form>
+
+  <div class="filters">
+    <button onclick="filterItems('in')">In Inventory</button>
+    <button onclick="filterItems('out')">Signed Out</button>
+    <button onclick="loadItems()">Show All</button>
   </div>
 
-  <div class="table-container">
-    <table id="inventoryTable">
-      <thead>
-        <tr>
-          <th>Item Name</th>
-          <th>Requested</th>
-          <th>On Hand</th>
-          <th>Received</th>
-          <th>Custodian</th>
-          <th>Location</th>
-          <th>Email</th>
-          <th>Phone</th>
-          <th>Item Type</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Requested</th>
+        <th>Custodian</th>
+        <th>Location</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Returned</th>
+      </tr>
+    </thead>
+    <tbody id="requestTable"></tbody>
+  </table>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-    import {
-      getDatabase, ref, set, push, update, onValue, remove, get
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, push, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDCo2OweTTS-g60MVwL9N-VUCyCyctZavc",
@@ -139,176 +112,78 @@
     const analytics = getAnalytics(app);
     const db = getDatabase(app);
 
-    const tableBody = document.querySelector("#inventoryTable tbody");
-    const requestsBody = document.querySelector("#requestsTable tbody");
-    let filterStatusValue = null;
-    let allItems = {};
-
-    function renderTable(items) {
-      tableBody.innerHTML = "";
-      Object.entries(items).forEach(([key, item]) => {
-        let statusText = "Missing";
-        let rowClass = "missing";
-        let actionHTML = ``;
-
-        if (item.returned) {
-          statusText = "Returned";
-          rowClass = "returned";
-          actionHTML = "✅ Returned";
-        } else if (item.verified) {
-          statusText = "Verified";
-          rowClass = "verified";
-          actionHTML = `<button onclick='markReturned("${key}")'>Mark Returned</button>`;
-        } else if (item.received >= item.requested) {
-          statusText = "Complete";
-          rowClass = "confirmed";
-          actionHTML = `<button onclick='verifyItem("${key}")'>Verify</button>`;
-        } else {
-          actionHTML = `<input type='number' min='0' id='recv-${key}' placeholder='Qty'> 
-                        <button onclick='confirmReceived("${key}")'>Received</button>`;
-        }
-
-        actionHTML += ` 
-          <button onclick='editItem("${key}")'>Edit</button>
-          <button onclick='deleteItem("${key}")'>🗑️ Delete</button>`;
-
-        if (filterStatusValue && filterStatusValue !== rowClass) return;
-
-        const row = document.createElement("tr");
-        row.className = rowClass;
-        row.innerHTML = `
-          <td>${item.itemName}</td>
-          <td>${item.requested}</td>
-          <td>${item.onHand || 0}</td>
-          <td>${item.received || 0}</td>
-          <td>${item.custodian || ""}</td>
-          <td>${item.location || ""}</td>
-          <td>${item.email || ""}</td>
-          <td>${item.phone || ""}</td>
-          <td>${item.itemType || ""}</td>
-          <td>${statusText}</td>
-          <td>${actionHTML}</td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    onValue(ref(db, "inventory"), (snapshot) => {
-      allItems = snapshot.val() || {};
-      renderTable(allItems);
-    });
-
-    onValue(ref(db, "requests"), (snapshot) => {
-      const requests = snapshot.val() || {};
-      requestsBody.innerHTML = "";
-      Object.entries(requests).forEach(([key, item]) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${item.itemName}</td>
-          <td>${item.requested}</td>
-          <td>${item.custodian || ""}</td>
-          <td>${item.location || ""}</td>
-          <td>${item.email || ""}</td>
-          <td>${item.phone || ""}</td>
-          <td>${item.itemType || ""}</td>
-          <td>
-            <button onclick='approveRequest("${key}")'>Approve</button>
-            <button onclick='denyRequest("${key}")'>Deny</button>
-          </td>
-        `;
-        requestsBody.appendChild(row);
-      });
-    });
-
-    window.approveRequest = async function (key) {
-      const snap = await get(ref(db, `requests/${key}`));
-      const item = snap.val();
-      if (!item) return;
-      const newRef = push(ref(db, "inventory"));
-      await set(newRef, item);
-      await remove(ref(db, `requests/${key}`));
-    };
-
-    window.denyRequest = async function (key) {
-      await remove(ref(db, `requests/${key}`));
-    };
-
-    window.filterStatus = function (statusClass) {
-      filterStatusValue = filterStatusValue === statusClass ? null : statusClass;
-      renderTable(allItems);
-    };
-
-    window.confirmReceived = async function (key) {
-      const input = document.getElementById(`recv-${key}`);
-      const value = parseInt(input.value);
-      if (isNaN(value) || value < 0) return alert("Enter a valid quantity.");
-      await update(ref(db, `inventory/${key}`), { received: value });
-    };
-
-    window.verifyItem = async function (key) {
-      await update(ref(db, `inventory/${key}`), { verified: true });
-    };
-
-    window.markReturned = async function (key) {
-      await update(ref(db, `inventory/${key}`), { returned: true });
-    };
-
-    window.deleteItem = async function (key) {
-      const confirmed = confirm("Are you sure you want to permanently delete this item?");
-      if (confirmed) {
-        await remove(ref(db, `inventory/${key}`));
-      }
-    };
-
-    window.addManualItem = async function () {
+    window.submitRequest = async function (e) {
+      e.preventDefault();
       const item = {
         itemName: document.getElementById("itemName").value.trim(),
         requested: parseInt(document.getElementById("requested").value),
-        onHand: parseInt(document.getElementById("onHand").value || "0"),
-        received: 0,
-        verified: false,
-        returned: false,
         custodian: document.getElementById("custodian").value.trim(),
         location: document.getElementById("location").value.trim(),
         email: document.getElementById("email").value.trim(),
         phone: document.getElementById("phone").value.trim(),
-        itemType: document.getElementById("itemType").value
-      };
-      if (!item.itemName || isNaN(item.requested)) return alert("Item name and quantity are required.");
-      const newRef = push(ref(db, "inventory"));
-      await set(newRef, item);
-      document.querySelectorAll("#adminForm input, #adminForm select").forEach(i => i.value = "");
-    };
-
-    window.resetInventory = async function () {
-      const confirmReset = confirm("⚠️ This will permanently delete all inventory items. Continue?");
-      if (!confirmReset) return;
-      await remove(ref(db, "inventory"));
-      alert("Inventory reset complete.");
-    };
-
-    window.editItem = async function (key) {
-      const item = allItems[key];
-      if (!item) return;
-
-      const newValues = {
-        itemName: prompt("Item Name:", item.itemName),
-        requested: parseInt(prompt("Requested Quantity:", item.requested)),
-        onHand: parseInt(prompt("On Hand Quantity:", item.onHand || 0)),
-        received: parseInt(prompt("Received Quantity:", item.received || 0)),
-        custodian: prompt("Custodian:", item.custodian || ""),
-        location: prompt("Location:", item.location || ""),
-        email: prompt("Email:", item.email || ""),
-        phone: prompt("Phone:", item.phone || ""),
-        itemType: prompt("Item Type (uniform, insignia, equipment):", item.itemType || "")
+        expendable: document.getElementById("expendable").value === "true",
+        received: 0,
+        verified: false,
+        returned: false
       };
 
-      if (!newValues.itemName || isNaN(newValues.requested)) {
-        return alert("Invalid item name or quantity.");
+      if (!item.itemName || isNaN(item.requested)) {
+        return alert("Item name and quantity are required.");
       }
 
-      await update(ref(db, `inventory/${key}`), newValues);
+      const newRef = push(ref(db, "requests"));
+      await set(newRef, item);
+      alert("Request submitted!");
+      e.target.reset();
+      loadItems();
     };
+
+    function loadItems() {
+      const table = document.getElementById("requestTable");
+      table.innerHTML = "";
+      const requestRef = ref(db, "requests");
+      onValue(requestRef, (snapshot) => {
+        const data = snapshot.val();
+        table.innerHTML = "";
+        for (const id in data) {
+          const item = data[id];
+          addRow(item);
+        }
+      });
+    }
+
+    function filterItems(mode) {
+      const table = document.getElementById("requestTable");
+      table.innerHTML = "";
+      const requestRef = ref(db, "requests");
+      onValue(requestRef, (snapshot) => {
+        const data = snapshot.val();
+        for (const id in data) {
+          const item = data[id];
+          if (mode === 'in' && item.returned === true) {
+            addRow(item);
+          } else if (mode === 'out' && item.returned === false) {
+            addRow(item);
+          }
+        }
+      });
+    }
+
+    function addRow(item) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${item.itemName}</td>
+        <td>${item.requested}</td>
+        <td>${item.custodian}</td>
+        <td>${item.location}</td>
+        <td>${item.email}</td>
+        <td>${item.phone}</td>
+        <td>${item.returned ? "Yes" : "No"}</td>
+      `;
+      document.getElementById("requestTable").appendChild(row);
+    }
+
+    loadItems();
   </script>
 </body>
 </html>
