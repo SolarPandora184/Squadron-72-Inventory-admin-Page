@@ -41,7 +41,7 @@
   <div class="logo">
     <img src="ChatGPT Image Jul 17, 2025, 10_20_07 AM.png" alt="AESA Logo" />
   </div>
-  <h1>Request Inventory Item</h1>
+  <h1>Sign out form</h1>
   <form onsubmit="submitRequest(event)">
     <input type="text" id="itemName" placeholder="Item Name" required />
     <input type="number" id="requested" placeholder="Requested Qty" required />
@@ -49,9 +49,10 @@
     <input type="text" id="location" placeholder="Location" />
     <input type="email" id="email" placeholder="Email" />
     <input type="text" id="phone" placeholder="Phone" />
-    <select id="expendable">
-      <option value="false">Non-Expendable</option>
-      <option value="true">Expendable</option>
+    <select id="Item type">
+      <option value="false">Insignia</option>
+      <option value="true">Uniform</option>
+      <option value="true">Equipment</option>
     </select>
     <button type="submit">Submit Request</button>
   </form>
