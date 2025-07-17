@@ -57,19 +57,25 @@
   </form>
 
   <script type="module">
+    // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
     import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+    // Your web app's Firebase configuration
     const firebaseConfig = {
-      apiKey: "AIzaSyDZXaf9PO6E69KNiv-yjtwFxGe8c6jyz3c",
-      authDomain: "video-call-system-140da.firebaseapp.com",
-      projectId: "video-call-system-140da",
-      storageBucket: "video-call-system-140da.appspot.com",
-      messagingSenderId: "818151254357",
-      appId: "1:818151254357:web:00c81df2d11a9118ffe7dc"
+      apiKey: "AIzaSyDCo2OweTTS-g60MVwL9N-VUCyCyctZavc",
+      authDomain: "squadron-72.firebaseapp.com",
+      projectId: "squadron-72",
+      storageBucket: "squadron-72.firebasestorage.app",
+      messagingSenderId: "572966132981",
+      appId: "1:572966132981:web:44053bbe8c60378647f9bc",
+      measurementId: "G-0D77CRVR83"
     };
 
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
     const db = getDatabase(app);
 
     window.submitRequest = async function (e) {
@@ -87,7 +93,10 @@
         returned: false
       };
 
-      if (!item.itemName || isNaN(item.requested)) return alert("Item name and quantity are required.");
+      if (!item.itemName || isNaN(item.requested)) {
+        return alert("Item name and quantity are required.");
+      }
+
       const newRef = push(ref(db, "requests"));
       await set(newRef, item);
       alert("Request submitted!");
