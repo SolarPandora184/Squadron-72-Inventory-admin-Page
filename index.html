@@ -89,9 +89,11 @@
     <input type="text" id="location" placeholder="Location" />
     <input type="email" id="email" placeholder="Email" />
     <input type="text" id="phone" placeholder="Phone" />
-    <select id="expendable">
-      <option value="false">Non-Expendable</option>
-      <option value="true">Expendable</option>
+    <select id="itemType" required>
+      <option value="">-- Select Type --</option>
+      <option value="Uniform">Uniform</option>
+      <option value="Insignia">Insignia</option>
+      <option value="Equipment">Equipment</option>
     </select>
     <button onclick="addManualItem()">Add Item</button>
   </div>
@@ -108,7 +110,7 @@
           <th>Location</th>
           <th>Email</th>
           <th>Phone</th>
-          <th>Expendable</th>
+          <th>Item Type</th>
           <th>Status</th>
           <th>Action</th>
         </tr>
@@ -128,7 +130,7 @@
       apiKey: "AIzaSyDCo2OweTTS-g60MVwL9N-VUCyCyctZavc",
       authDomain: "squadron-72.firebaseapp.com",
       projectId: "squadron-72",
-      storageBucket: "squadron-72.firebasestorage.app",
+      storageBucket: "squadron-72.appspot.com",
       messagingSenderId: "572966132981",
       appId: "1:572966132981:web:44053bbe8c60378647f9bc",
       measurementId: "G-0D77CRVR83"
@@ -184,7 +186,7 @@
           <td>${item.location || ""}</td>
           <td>${item.email || ""}</td>
           <td>${item.phone || ""}</td>
-          <td>${item.expendable ? "Yes" : "No"}</td>
+          <td>${item.itemType || "N/A"}</td>
           <td>${statusText}</td>
           <td>${actionHTML}</td>
         `;
@@ -209,7 +211,7 @@
           <td>${item.location || ""}</td>
           <td>${item.email || ""}</td>
           <td>${item.phone || ""}</td>
-          <td>${item.expendable ? "Yes" : "No"}</td>
+          <td>${item.itemType || "N/A"}</td>
           <td>
             <button onclick='approveRequest("${key}")'>Approve</button>
             <button onclick='denyRequest("${key}")'>Deny</button>
@@ -271,7 +273,7 @@
         location: document.getElementById("location").value.trim(),
         email: document.getElementById("email").value.trim(),
         phone: document.getElementById("phone").value.trim(),
-        expendable: document.getElementById("expendable").value === "true"
+        itemType: document.getElementById("itemType").value
       };
       if (!item.itemName || isNaN(item.requested)) return alert("Item name and quantity are required.");
       const newRef = push(ref(db, "inventory"));
@@ -299,7 +301,7 @@
         location: prompt("Location:", item.location || ""),
         email: prompt("Email:", item.email || ""),
         phone: prompt("Phone:", item.phone || ""),
-        expendable: confirm("Is this item expendable? (OK for Yes, Cancel for No)")
+        itemType: prompt("Item Type (Uniform, Insignia, Equipment):", item.itemType || "")
       };
 
       if (!newValues.itemName || isNaN(newValues.requested)) {
